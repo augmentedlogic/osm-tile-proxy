@@ -25,6 +25,15 @@ RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule . /index.php [L]
 ```
+or for nginx
+
+```
+ location /  {
+            include /etc/nginx/fastcgi_params;
+            fastcgi_param   SCRIPT_FILENAME  $document_root/index.php;
+            fastcgi_pass unix:/var/run/php/php7.3-fpm.sock;
+}
+```
 
 your tiles will now be served at
 
