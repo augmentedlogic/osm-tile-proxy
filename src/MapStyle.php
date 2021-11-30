@@ -20,7 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 **/
-namespace com\augmentedlogic\OsmTileProxy;
+namespace com\augmentedlogic\osmtileproxy;
 
 use Imagick;
 
@@ -44,6 +44,8 @@ class MapStyle
 	private $mirrors = array();
 	private $refresh = 14;
 
+	private $option_lang = null;
+
 
 	function __construct($stylename)
 	{
@@ -54,6 +56,11 @@ class MapStyle
 	public function setMirrors($mirrors)
 	{
 		$this->mirrors = $mirrors;
+	}
+
+	public function setLang($lang)
+	{
+		$this->lang = $lang;
 	}
 
 	public function setEffectModulate($brightness = 100, $saturation = 50, $hue = 100)
@@ -146,6 +153,10 @@ class MapStyle
 		return $this->option_negate_channel;
 	}
 
+        public function getLang()
+        {
+                return $this->lang;
+        }
 
 
 }

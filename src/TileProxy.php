@@ -20,7 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 **/
-namespace com\augmentedlogic\OsmTileProxy;
+namespace com\augmentedlogic\osmtileproxy;
 
 use Imagick;
 use ImagickPixel;
@@ -47,7 +47,7 @@ class TileProxy
 
 	private $allow_referrer = NULL;
 	private $styles = array();
-
+        private $lang = null;
 
 	public function addStyle(MapStyle $style)
 	{
@@ -73,6 +73,12 @@ class TileProxy
 	{
 		$this->$option_log_dir = $option_log_dir;
 	}
+
+
+        public function setLang($lang)
+        {
+                $this->$lang = $lang;
+        }
 
 
 	public function setReferrer($referrer)
@@ -114,6 +120,9 @@ class TileProxy
 		$domain = $this->styles[$current_style_name]->getMirrors()[$random];
 
 		$url = $domain . $filepath;
+                if(!is_null($current_style->getLang())) {
+                   $url = $domain . $filepath. "?lang=".$current_style->getLang();
+                }
 		$this->log("Downloading ".$url, 2);
 		$save_to = "{$this->option_storage_dir}/{$current_style_name}{$filepath}";
 		$this->log("Saving to ".$save_to, 2);

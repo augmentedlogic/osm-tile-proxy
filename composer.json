@@ -1,0 +1,20 @@
+{
+    "name": "augmentedlogic/osm-tile-proxy",
+    "description": "A proxy/tile cache for openstreetmap tiles which can modify the tiles on the fly to create custom colorful maps",
+    "homepage": "https://developer.augmentedlogic.com",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Wolfgang Hauptfleisch",
+            "email": "dev@augmentedlogic.com"
+        }
+    ],
+    "require": {
+       "php": ">=7.3"
+    },
+    "autoload": {
+        "psr-4": {
+            "com\\augmentedlogic\\osmtileproxy\\": "src"
+        }
+    }
+}
