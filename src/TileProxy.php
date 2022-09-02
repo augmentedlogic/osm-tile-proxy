@@ -219,6 +219,8 @@ class TileProxy
 	public function handle()
 	{
 		$path_only = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+		$subfolder = dirname(parse_url($_SERVER['SCRIPT_NAME'], PHP_URL_PATH));
+        	$path_only = substr($path_only, strlen($subfolder)-1);
 		$parts = explode("/", $path_only);
 
 		if($this->validate($parts)) {
