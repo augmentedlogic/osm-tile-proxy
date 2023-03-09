@@ -47,7 +47,7 @@ class TileProxy
 
 	private $allow_referrer = NULL;
 	private $styles = array();
-        private $lang = null;
+	private $lang = null;
 
 	public function addStyle(MapStyle $style)
 	{
@@ -75,10 +75,10 @@ class TileProxy
 	}
 
 
-        public function setLang($lang)
-        {
-                $this->$lang = $lang;
-        }
+	public function setLang($lang)
+	{
+		$this->$lang = $lang;
+	}
 
 
 	public function setReferrer($referrer)
@@ -94,8 +94,8 @@ class TileProxy
 
 	private function log($msg, $level = 0)
 	{
-		if($level <= $this->option_loglevel) {
-			file_put_contents($this->option_log_dir."/proxy.log", date("Y M j G:i:s", time())." ".$msg."\n", FILE_APPEND);
+		if ($level <= $this->option_loglevel) {
+			file_put_contents($this->option_log_dir . "/proxy.log", date("Y M j G:i:s", time()) . " " . $msg . "\n", FILE_APPEND);
 		}
 	}
 
@@ -103,31 +103,30 @@ class TileProxy
 	{
 		$a = getimagesize($path);
 		$image_type = $a[2];
-		if(in_array($image_type , array(IMAGETYPE_PNG)))
-		{
+		if (in_array($image_type, array(IMAGETYPE_PNG))) {
 			return true;
 		}
 		return false;
 	}
 
 
-	private function fetchTile($current_style_name, $filepath, $target_dir)
+	private function fetchTile($current_style_name, $filepath, $target_dir, $webp)
 	{
 		$success = false;
 		// choose a random mirror
 		$current_style = $this->styles[$current_style_name];
-		$random = rand(0, count($this->styles[$current_style_name]->getMirrors()) -1);
+		$random = rand(0, count($this->styles[$current_style_name]->getMirrors()) - 1);
 		$domain = $this->styles[$current_style_name]->getMirrors()[$random];
 
 		$url = $domain . $filepath;
-                if(!is_null($current_style->getLang())) {
-                   $url = $domain . $filepath. "?lang=".$current_style->getLang();
-                }
-		$this->log("Downloading ".$url, 2);
+		if (!is_null($current_style->getLang())) {
+			$url = $domain . $filepath . "?lang=" . $current_style->getLang();
+		}
+		$this->log("Downloading " . $url, 2);
 		$save_to = "{$this->option_storage_dir}/{$current_style_name}{$filepath}";
-		$this->log("Saving to ".$save_to, 2);
-		$this->log("mkdir ".$target_dir, 2);
-		if(!is_dir($target_dir)) {
+		$this->log("Saving to " . $save_to, 2);
+		$this->log("mkdir " . $target_dir, 2);
+		if (!is_dir($target_dir)) {
 			mkdir($target_dir, 0777, true);
 		}
 		// tile download
@@ -135,30 +134,35 @@ class TileProxy
 		$fp = fopen($save_to, "w");
 		curl_setopt($ch, CURLOPT_FILE, $fp);
 		curl_setopt($ch, CURLOPT_HEADER, 0);
-		curl_setopt($ch,CURLOPT_USERAGENT, $this->user_agent);
+		curl_setopt($ch, CURLOPT_USERAGENT, $this->user_agent);
 		curl_exec($ch);
 		curl_close($ch);
 		fflush($fp);
 		fclose($fp);
 
 		// check if image downloaded successfully
-		if($this->is_valid_image($save_to)) {
+		if ($this->is_valid_image($save_to)) {
 			$success = true;
 
 			// TODO: dont save image in between
-			if($current_style->getModulate()) {
+			if ($current_style->getModulate()) {
 				$this->log("Modulating Image", 2);
 				$this->modulateImage($save_to, $current_style->getModulateBrightness(), $current_style->getModulateSaturation(), $current_style->getModulateHue());
 			}
 
-			if($current_style->getSepia()) {
+			if ($current_style->getSepia()) {
 				$this->log("Sepia Image", 2);
 				$this->sepiaToneImage($save_to, $current_style->getSepiaValue());
 			}
 
-			if($current_style->getNegate()) {
+			if ($current_style->getNegate()) {
 				$this->log("Negate Image", 2);
 				$this->negateImage($save_to, $current_style->getNegateGrayOnly(), $current_style->getNegateChannel());
+			}
+
+			if ($webp) {
+				$this->log("Converting to WEBP", 2);
+				$this->convertToWEBP($save_to);
 			}
 
 		} else {
@@ -172,43 +176,59 @@ class TileProxy
 	/**
 	 *  image processing
 	 **/
-	function sepiaToneImage($imagePath, $sepia) {
+	function sepiaToneImage($imagePath, $sepia)
+	{
 		$imagick = new Imagick(realpath($imagePath));
 		$imagick->sepiaToneImage($sepia);
 		$imagick->writeImage($imagePath);
 	}
 
 
-	function modulateImage($target_file, $brightness, $saturation, $hue) {
+	function modulateImage($target_file, $brightness, $saturation, $hue)
+	{
 		$imagick = new Imagick($target_file);
 		$imagick->modulateImage($brightness, $saturation, $hue);
 		$imagick->writeImage($target_file);
 	}
 
-	function negateImage($imagePath, $grayOnly, $channel = Imagick::CHANNEL_DEFAULT) {
+	function negateImage($imagePath, $grayOnly, $channel = Imagick::CHANNEL_DEFAULT)
+	{
 		$imagick = new Imagick(realpath($imagePath));
 		$imagick->negateImage($grayOnly, $channel);
 		$imagick->writeImage($imagePath);
 	}
 
+	function convertToWEBP($imagePath)
+	{
+		$webppath = pathinfo($imagePath);
+		$webppath = $webppath['dirname'] . '/' . $webppath['filename'] . '.webp';
+
+		$imagick = new Imagick(realpath($imagePath));
+		$imagick->setImageFormat('WEBP');
+		$imagick->setOption('webp:lossless', 'true');
+		$imagick->setOption('webp:low-memory', 'true');
+
+		$imagick->writeImage($webppath);
+	}
+
 	private function validate($parts)
 	{
 		$valid = true;
-		if(!is_null($this->allow_referrer)) {
+		if (!is_null($this->allow_referrer)) {
 			if (!empty($_SERVER['HTTP_REFERER'])) {
-				if($_SERVER['HTTP_REFERER'] != $this->allow_referrer) {
+				if ($_SERVER['HTTP_REFERER'] != $this->allow_referrer) {
 					$valid = false;
-					$this->log("referrer_not_allowed: ". $_SERVER['HTTP_REFERER'], 1);
+					$this->log("referrer_not_allowed: " . $_SERVER['HTTP_REFERER'], 1);
 				}
 			}
 		}
 
-		if(count($parts) != 5) {
+		if (count($parts) != 5) {
 			$this->log("invalid request url", 1);
 			$valid = false;
 		}
 
-		if(!$this->styles[$parts[1]]) {
+		if (!$this->styles[$parts[1]]) {
 			$valid = false;
 			$this->log("invalid style requested", 1);
 		}
@@ -221,26 +241,36 @@ class TileProxy
 		$path_only = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 		$parts = explode("/", $path_only);
 
-		if($this->validate($parts)) {
-			$succes = false;
+		if ($this->validate($parts)) {
+			$success = false;
+			$webp = false;
 
 			$current_style = $this->styles[$parts[1]];
 			$current_style_name = $current_style->getName();
 
 			$target_file = "/${parts[2]}/${parts[3]}/{$parts[4]}";
-			$target_dir = "{$this->option_storage_dir}/{$current_style_name}/${parts[2]}/${parts[3]}/";
 			$check_file = "{$this->option_storage_dir}/{$current_style_name}/${parts[2]}/${parts[3]}/{$parts[4]}";
 
-			$this->log("Checking ". $check_file, 2);
+			if (strtolower(pathinfo($check_file)['extension']) === 'webp') {
+				$webp = true;
+				$webpparts4 = pathinfo($check_file);
+				$webpparts4 = $webpparts4['filename'] . '.png';
+				$target_file_fetch = "/${parts[2]}/${parts[3]}/{$webpparts4}";
+			} else {
+				$target_file_fetch = $target_file;
+			}
 
-			if (!is_file($check_file))
-			{
-				$success = $this->fetchTile($current_style_name, $target_file, $target_dir);
+			$target_dir = "{$this->option_storage_dir}/{$current_style_name}/${parts[2]}/${parts[3]}/";
+
+			$this->log("Checking " . $check_file, 2);
+
+			if (!is_file($check_file)) {
+				$success = $this->fetchTile($current_style_name, $target_file_fetch, $target_dir, $webp);
 			} else {
 				// check if refresh is needed
-				if(filemtime($check_file) > time() - (86400 * $this->refresh) ) {
+				if (filemtime($check_file) > time() - (86400 * $this->refresh)) {
 					$this->log("refresh needed.", 2);
-					$success = $this->fetchTile($current_style_name, $target_file, $target_dir);
+					$success = $this->fetchTile($current_style_name, $target_file_fetch, $target_dir, $webp);
 				} else {
 					$this->log("file found in cache.", 2);
 					$success = true;
@@ -249,24 +279,24 @@ class TileProxy
 
 
 			// we set broser cache options
-			if($success) {
-				$exp_gmt = gmdate("D, d M Y H:i:s", time() + $this->option_ttl) ." GMT";
-				$mod_gmt = gmdate("D, d M Y H:i:s", filemtime($check_file)) ." GMT";
+			if ($success) {
+				$exp_gmt = gmdate("D, d M Y H:i:s", time() + $this->option_ttl) . " GMT";
+				$mod_gmt = gmdate("D, d M Y H:i:s", filemtime($check_file)) . " GMT";
 				header("Expires: " . $exp_gmt);
 				header("Last-Modified: " . $mod_gmt);
 				header("Cache-Control: public, max-age=" . $this->option_ttl);
-				header ('Content-Type: image/png');
+				header($webp ? 'Content-Type: image/webp' : 'Content-Type: image/png');
 				readfile($check_file);
 				flush();
 			} else {
 				// something else went wrong
-				header ('Content-Type: text/html');
+				header('Content-Type: text/html');
 				http_response_code(404);
 			}
 
 		} else {
 			// image not found
-			header ('Content-Type: text/html');
+			header('Content-Type: text/html');
 			http_response_code(404);
 		}
 
@@ -275,5 +305,3 @@ class TileProxy
 
 
 }
-
-
