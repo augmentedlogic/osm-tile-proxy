@@ -46,6 +46,9 @@ class TileProxy
     private $option_refresh = null; // refresh after n days, null = ignored
 
     private $allow_referrer = NULL;
+    /**
+     * @var MapStyle[]
+     */
     private $styles = array();
 
 
@@ -85,7 +88,7 @@ class TileProxy
     }
 
 
-    private function log($msg, $level = 0)
+    protected function log($msg, $level = 0)
     {
         if($level <= $this->option_loglevel) {
             file_put_contents($this->option_log_dir."/proxy.log", date("Y M j G:i:s", time())." ".$msg."\n", FILE_APPEND);
@@ -218,12 +221,12 @@ class TileProxy
             }
         }
 
-        if(count($parts) != 5) {
+        if(count($parts) != 4) {
             $this->log("invalid request url", self::LOGLEVEL_INFO);
             $valid = false;
         }
 
-        if(!$this->styles[$parts[1]]) {
+        if(!$this->styles[$parts[0]]) {
             $valid = false;
             $this->log("invalid style requested", self::LOGLEVEL_INFO);
         }
@@ -233,17 +236,16 @@ class TileProxy
 
     public function handle()
     {
-        $path_only = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-        $parts = explode("/", $path_only);
+        $parts = $this->getParameters();
 
         if($this->validate($parts)) {
 
-            $current_style = $this->styles[$parts[1]];
+            $current_style = $this->styles[$parts[0]];
             $current_style_name = $current_style->getName();
 
-            $target_file = "/${parts[2]}/${parts[3]}/{$parts[4]}";
-            $target_dir = "{$this->option_storage_dir}/{$current_style_name}/${parts[2]}/${parts[3]}/";
-            $check_file = "{$this->option_storage_dir}/{$current_style_name}/${parts[2]}/${parts[3]}/{$parts[4]}";
+            $target_file = "/$parts[1]/$parts[2]/$parts[3]";
+            $target_dir = "$this->option_storage_dir/$current_style_name/$parts[1]/$parts[2]/";
+            $check_file = "$this->option_storage_dir/$current_style_name/$parts[1]/$parts[2]/$parts[3]";
 
             $this->log("Checking ". $check_file, self::LOGLEVEL_DEBUG);
 
@@ -267,7 +269,7 @@ class TileProxy
             }
 
 
-            // we set broser cache options
+            // we set browser cache options
             if($success) {
                 $exp_gmt = gmdate("D, d M Y H:i:s", time() + $this->option_ttl) ." GMT";
                 $mod_gmt = gmdate("D, d M Y H:i:s", filemtime($check_file)) ." GMT";
@@ -292,7 +294,13 @@ class TileProxy
 
     }
 
+    protected function getParameters(): array
+    {
+        $path_only = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        $parts = explode("/", $path_only);
 
+        return array_shift($parts);
+    }
 }
 
 
