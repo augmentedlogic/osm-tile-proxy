@@ -68,7 +68,7 @@ class MapStyle
 
     public function setLang($lang)
     {
-        $this->lang = $lang;
+        $this->option_lang = $lang;
     }
 
     public function setEffectModulate($brightness = 100, $saturation = 50, $hue = 100)
@@ -93,7 +93,7 @@ class MapStyle
     }
 
 
-    public function setRefresh()
+    public function setRefresh($refresh)
     {
         $this->refresh = $refresh;
     }
@@ -112,7 +112,7 @@ class MapStyle
         }
         if($image_format == self::IMAGE_FORMAT_PNG) {
             $this->option_image_format = "png";
-            $this->option_Image_mimetype = "image/png";
+            $this->option_image_mimetype = "image/png";
         }
         if($image_format == self::IMAGE_FORMAT_WEBP) {
             $this->option_image_format = "webp";
@@ -193,4 +193,3 @@ class MapStyle
     }
 
 }
-

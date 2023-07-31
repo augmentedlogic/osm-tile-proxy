@@ -65,21 +65,19 @@ class TileProxy
         $this->option_refresh = $days;
     }
 
-
-
     public function setCacheDir($option_storage_dir)
     {
-        $this->$option_storage_dir = $option_storage_dir;
+        $this->option_storage_dir = $option_storage_dir;
     }
 
     public function setLogDir($option_log_dir)
     {
-        $this->$option_log_dir = $option_log_dir;
+        $this->option_log_dir = $option_log_dir;
     }
 
     public function setLang($lang)
     {
-        $this->$lang = $lang;
+        $this->lang = $lang;
     }
 
     public function setReferrer($referrer)
@@ -183,7 +181,7 @@ class TileProxy
     /**
      *  image processing
      **/
-    function changeImageFormat($target_file, $format) {
+    private function changeImageFormat($target_file, $format) {
         $imagick = new Imagick($target_file);
         $imagick->setImageFormat($format);
         $new_target_file = str_replace(".png", ".".$format, $target_file);
@@ -193,19 +191,19 @@ class TileProxy
         return $new_target_file;
     }
 
-    function sepiaToneImage($image_obj, $sepia) {
+    private function sepiaToneImage($image_obj, $sepia) {
         //$imagick = new Imagick(realpath($imagePath));
         return $image_obj->sepiaToneImage($sepia);
         //$imagick->writeImage($imagePath);
     }
 
-    function modulateImage($image_obj, $brightness, $saturation, $hue) {
+    private function modulateImage($image_obj, $brightness, $saturation, $hue) {
         //$imagick = new Imagick($target_file);
         return $image_obj->modulateImage($brightness, $saturation, $hue);
         //$imagick->writeImage($target_file);
     }
 
-    function negateImage($image_obj, $grayOnly, $channel = Imagick::CHANNEL_DEFAULT) {
+    private function negateImage($image_obj, $grayOnly, $channel = Imagick::CHANNEL_DEFAULT) {
         //$imagick = new Imagick(realpath($imagePath));
         return $image_obj->negateImage($grayOnly, $channel);
         //$imagick->writeImage($imagePath);
