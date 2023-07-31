@@ -147,7 +147,7 @@ class TileProxy
         if($this->is_valid_image($save_to, $current_style)) {
             $success = true;
 
-            if($current_style->getImageFormat() != MapStyle::IMAGE_FORMAT_PNG) {
+            if($current_style->getImageChecktype() !== MapStyle::IMAGE_FORMAT_PNG) {
                 $this->log("to ". $current_style->getImageFormat(), 2);
                 $save_to = $this->changeImageFormat($save_to, $current_style->getImageFormat());
             }

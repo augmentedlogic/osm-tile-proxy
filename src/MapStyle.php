@@ -27,9 +27,9 @@ use Imagick;
 class MapStyle
 {
 
-    const IMAGE_FORMAT_JPEG = 1;
-    const IMAGE_FORMAT_PNG = 2;
-    const IMAGE_FORMAT_WEBP = 3;
+    const IMAGE_FORMAT_JPEG = IMAGETYPE_JPEG;
+    const IMAGE_FORMAT_PNG = IMAGETYPE_PNG;
+    const IMAGE_FORMAT_WEBP = IMAGETYPE_WEBP;
 
     private $stylename;
     private $option_modulate = false;
@@ -47,7 +47,7 @@ class MapStyle
 
     private $option_image_format = "png";
     private $option_image_mimetype = "image/png";
-    private $option_image_checktype = IMAGETYPE_PNG;
+    private $option_image_checktype = self::IMAGE_FORMAT_PNG;
 
     private $mirrors = array();
     private $refresh = 14;
@@ -118,6 +118,7 @@ class MapStyle
             $this->option_image_format = "webp";
             $this->option_image_mimetype = "image/webp";
         }
+        $this->option_image_checktype = $image_format;
     }
 
     public function getImageFormat()
