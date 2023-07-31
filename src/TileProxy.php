@@ -123,10 +123,10 @@ class TileProxy
         if(!is_null($current_style->getLang())) {
             $url = $domain . $filepath. "?lang=".$current_style->getLang();
         }
-        $this->log("Downloading ".$url, 2);
+        $this->log("Downloading ".$url, self::LOGLEVEL_DEBUG);
         $save_to = "{$this->option_storage_dir}/{$current_style_name}{$filepath}";
-        $this->log("Saving to ".$save_to, 2);
-        $this->log("mkdir ".$target_dir, 2);
+        $this->log("Saving to ".$save_to, self::LOGLEVEL_DEBUG);
+        $this->log("mkdir ".$target_dir, self::LOGLEVEL_DEBUG);
         if(!is_dir($target_dir)) {
             mkdir($target_dir, 0777, true);
         }
@@ -146,7 +146,7 @@ class TileProxy
             $success = true;
 
             if($current_style->getImageChecktype() !== MapStyle::IMAGE_FORMAT_PNG) {
-                $this->log("to ". $current_style->getImageFormat(), 2);
+                $this->log("to ". $current_style->getImageFormat(), self::LOGLEVEL_DEBUG);
                 $save_to = $this->changeImageFormat($save_to, $current_style->getImageFormat());
             }
 
@@ -154,17 +154,17 @@ class TileProxy
             if($current_style->getModulate() || $current_style->getSepia() || $current_style->getNegate()) {
                 $image_obj = new Imagick(realpath($save_to));
                 if($current_style->getModulate()) {
-                    $this->log("Modulating Image", 2);
+                    $this->log("Modulating Image", self::LOGLEVEL_DEBUG);
                     $this->modulateImage($image_obj, $current_style->getModulateBrightness(), $current_style->getModulateSaturation(), $current_style->getModulateHue());
                 }
 
                 if($current_style->getSepia()) {
-                    $this->log("Sepia Image", 2);
+                    $this->log("Sepia Image", self::LOGLEVEL_DEBUG);
                     $this->sepiaToneImage($image_obj, $current_style->getSepiaValue());
                 }
 
                 if($current_style->getNegate()) {
-                    $this->log("Negate Image", 2);
+                    $this->log("Negate Image", self::LOGLEVEL_DEBUG);
                     $this->negateImage($image_obj, $current_style->getNegateGrayOnly(), $current_style->getNegateChannel());
                 }
                 $image_obj->writeImage($save_to);
@@ -185,7 +185,7 @@ class TileProxy
         $imagick = new Imagick($target_file);
         $imagick->setImageFormat($format);
         $new_target_file = str_replace(".png", ".".$format, $target_file);
-        $this->log("Converting to " . $new_target_file, 2);
+        $this->log("Converting to " . $new_target_file, self::LOGLEVEL_DEBUG);
         unlink($target_file);
         $imagick->writeImage($new_target_file);
         return $new_target_file;
@@ -219,19 +219,19 @@ class TileProxy
             if (!empty($_SERVER['HTTP_REFERER'])) {
                 if($_SERVER['HTTP_REFERER'] != $this->allow_referrer) {
                     $valid = false;
-                    $this->log("referrer_not_allowed: ". $_SERVER['HTTP_REFERER'], 1);
+                    $this->log("referrer_not_allowed: ". $_SERVER['HTTP_REFERER'], self::LOGLEVEL_INFO);
                 }
             }
         }
 
         if(count($parts) != 5) {
-            $this->log("invalid request url", 1);
+            $this->log("invalid request url", self::LOGLEVEL_INFO);
             $valid = false;
         }
 
         if(!$this->styles[$parts[1]]) {
             $valid = false;
-            $this->log("invalid style requested", 1);
+            $this->log("invalid style requested", self::LOGLEVEL_INFO);
         }
 
         return $valid;
@@ -252,7 +252,7 @@ class TileProxy
             $target_dir = "{$this->option_storage_dir}/{$current_style_name}/${parts[2]}/${parts[3]}/";
             $check_file = "{$this->option_storage_dir}/{$current_style_name}/${parts[2]}/${parts[3]}/{$parts[4]}";
 
-            $this->log("Checking ". $check_file, 2);
+            $this->log("Checking ". $check_file, self::LOGLEVEL_DEBUG);
 
             if (!is_file($check_file))
             {
@@ -262,10 +262,10 @@ class TileProxy
                 // if no refresh is set, we can skip this operation
                 if(!is_null($this->option_refresh)) {
                     if(filemtime($check_file) > time() - (86400 * $this->option_refresh) ) {
-                        $this->log("refresh needed.", 2);
+                        $this->log("refresh needed.", self::LOGLEVEL_DEBUG);
                         $success = $this->fetchTile($current_style_name, $target_file, $target_dir);
                     } else {
-                        $this->log("file found in cache.", 2);
+                        $this->log("file found in cache.", self::LOGLEVEL_DEBUG);
                         $success = true;
                     }
                 } else {
