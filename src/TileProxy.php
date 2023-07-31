@@ -23,7 +23,7 @@
 namespace com\augmentedlogic\osmtileproxy;
 
 use Imagick;
-use ImagickPixel;
+use ImagickException;
 
 require_once 'MapStyle.php';
 
@@ -34,9 +34,6 @@ class TileProxy
     const LOGLEVEL_INFO = 1;
     const LOGLEVEL_DEBUG = 2;
 
-    private $z = 0;
-    private $x = 0;
-    private $y = 0;
     private $user_agent = "Mozilla/5.0 (X11; Linux i586; rv:31.0) Gecko/20100101 Firefox/74.0";
 
     private $option_storage_dir = "../cache/";
@@ -45,57 +42,56 @@ class TileProxy
     private $option_ttl = 86400; // default browser expiry time
     private $option_refresh = null; // refresh after n days, null = ignored
 
-    private $allow_referrer = NULL;
+    private $allow_referrer = null;
     /**
      * @var MapStyle[]
      */
     private $styles = array();
 
 
-    public function addStyle(MapStyle $style)
+    public function addStyle(MapStyle $style): void
     {
         $this->styles[$style->getName()] = $style;
     }
 
-    public function setBrowserCacheExpire($hours)
+    public function setBrowserCacheExpire(float $hours): void
     {
-        $this->option_ttl = $hours * 3600;
+        $this->option_ttl = (int)($hours * 3600);
     }
 
-    public function setRefresh($days)
+    public function setRefresh(float $days): void
     {
         $this->option_refresh = $days;
     }
 
-    public function setCacheDir($option_storage_dir)
+    public function setCacheDir(string $option_storage_dir): void
     {
         $this->option_storage_dir = $option_storage_dir;
     }
 
-    public function setLogDir($option_log_dir)
+    public function setLogDir(string $option_log_dir): void
     {
         $this->option_log_dir = $option_log_dir;
     }
 
-    public function setReferrer($referrer)
+    public function setReferrer(?string $referrer = null): void
     {
         $this->allow_referrer = $referrer;
     }
 
-    public function setLogLevel($loglevel)
+    public function setLogLevel(int $loglevel): void
     {
         $this->option_loglevel = $loglevel;
     }
 
-
-    protected function log($msg, $level = 0)
+    protected function log(string $msg, int $level = self::LOGLEVEL_OFF): void
     {
         if($level <= $this->option_loglevel) {
             file_put_contents($this->option_log_dir."/proxy.log", date("Y M j G:i:s", time())." ".$msg."\n", FILE_APPEND);
         }
     }
 
-    private function is_valid_image($path, $current_style)
+    private function is_valid_image(string $path, MapStyle $current_style): bool
     {
         $a = getimagesize($path);
         $image_type = $a[2];
@@ -106,14 +102,15 @@ class TileProxy
         return false;
     }
 
-
-    private function fetchTile($current_style_name, $filepath, $target_dir)
+    /**
+     * @throws ImagickException
+     */
+    private function fetchTile(MapStyle $current_style, string $filepath, string $target_dir, string $save_to): bool
     {
         $success = false;
         // choose a random mirror
-        $current_style = $this->styles[$current_style_name];
-        $random = rand(0, count($this->styles[$current_style_name]->getMirrors()) -1);
-        $domain = $this->styles[$current_style_name]->getMirrors()[$random];
+        $random = rand(0, count($current_style->getMirrors()) -1);
+        $domain = $current_style->getMirrors()[$random];
         $filepath = str_replace(".webp", ".png", $filepath);
 
         $url = $domain . $filepath;
@@ -121,7 +118,6 @@ class TileProxy
             $url = $domain . $filepath. "?lang=".$current_style->getLang();
         }
         $this->log("Downloading ".$url, self::LOGLEVEL_DEBUG);
-        $save_to = "{$this->option_storage_dir}/{$current_style_name}{$filepath}";
         $this->log("Saving to ".$save_to, self::LOGLEVEL_DEBUG);
         $this->log("mkdir ".$target_dir, self::LOGLEVEL_DEBUG);
         if(!is_dir($target_dir)) {
@@ -176,9 +172,11 @@ class TileProxy
     }
 
     /**
-     *  image processing
-     **/
-    private function changeImageFormat($target_file, $format) {
+     * image processing
+     *
+     * @throws ImagickException
+     */
+    private function changeImageFormat(string $target_file, string $format): string {
         $imagick = new Imagick($target_file);
         $imagick->setImageFormat($format);
         $new_target_file = str_replace(".png", ".".$format, $target_file);
@@ -188,28 +186,40 @@ class TileProxy
         return $new_target_file;
     }
 
-    private function sepiaToneImage($image_obj, $sepia) {
+    /**
+     * @throws ImagickException
+     */
+    private function sepiaToneImage(Imagick $image_obj, float $sepia): void
+    {
         //$imagick = new Imagick(realpath($imagePath));
-        return $image_obj->sepiaToneImage($sepia);
+        $image_obj->sepiaToneImage($sepia);
         //$imagick->writeImage($imagePath);
     }
 
-    private function modulateImage($image_obj, $brightness, $saturation, $hue) {
+    /**
+     * @throws ImagickException
+     */
+    private function modulateImage(Imagick $image_obj, float $brightness, float $saturation, float $hue): void
+    {
         //$imagick = new Imagick($target_file);
-        return $image_obj->modulateImage($brightness, $saturation, $hue);
+        $image_obj->modulateImage($brightness, $saturation, $hue);
         //$imagick->writeImage($target_file);
     }
 
-    private function negateImage($image_obj, $grayOnly, $channel = Imagick::CHANNEL_DEFAULT) {
+    /**
+     * @throws ImagickException
+     */
+    private function negateImage(Imagick $image_obj, bool $grayOnly, int $channel = Imagick::CHANNEL_DEFAULT): void
+    {
         //$imagick = new Imagick(realpath($imagePath));
-        return $image_obj->negateImage($grayOnly, $channel);
+        $image_obj->negateImage($grayOnly, $channel);
         //$imagick->writeImage($imagePath);
     }
 
     /**
      *
      **/
-    private function validate($parts)
+    private function validate(array $parts): bool
     {
         $valid = true;
         if(!is_null($this->allow_referrer)) {
@@ -234,7 +244,7 @@ class TileProxy
         return $valid;
     }
 
-    public function handle()
+    public function handle(): void
     {
         $parts = $this->getParameters();
 
@@ -249,23 +259,28 @@ class TileProxy
 
             $this->log("Checking ". $check_file, self::LOGLEVEL_DEBUG);
 
-            if (!is_file($check_file))
-            {
-                $success = $this->fetchTile($current_style_name, $target_file, $target_dir);
-            } else {
-                // check if refresh is needed
-                // if no refresh is set, we can skip this operation
-                if(!is_null($this->option_refresh)) {
-                    if(filemtime($check_file) > time() - (86400 * $this->option_refresh) ) {
-                        $this->log("refresh needed.", self::LOGLEVEL_DEBUG);
-                        $success = $this->fetchTile($current_style_name, $target_file, $target_dir);
+            try {
+                if (!is_file($check_file)) {
+                    $success = $this->fetchTile($current_style, $target_file, $target_dir, $check_file);
+                } else {
+                    // check if refresh is needed
+                    // if no refresh is set, we can skip this operation
+                    if (!is_null($this->option_refresh)) {
+                        if (filemtime($check_file) > time() - (86400 * $this->option_refresh)) {
+                            $this->log("refresh needed.", self::LOGLEVEL_DEBUG);
+                            $success = $this->fetchTile($current_style, $target_file, $target_dir, $check_file);
+                        } else {
+                            $this->log("file found in cache.", self::LOGLEVEL_DEBUG);
+                            $success = true;
+                        }
                     } else {
-                        $this->log("file found in cache.", self::LOGLEVEL_DEBUG);
                         $success = true;
                     }
-                } else {
-                    $success = true;
                 }
+            } catch (ImagickException $e) {
+                header ('Content-Type: text/html');
+                http_response_code(500);
+                return;
             }
 
 
@@ -290,7 +305,6 @@ class TileProxy
             header ('Content-Type: text/html');
             http_response_code(404);
         }
-
 
     }
 
