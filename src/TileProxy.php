@@ -47,7 +47,6 @@ class TileProxy
 
     private $allow_referrer = NULL;
     private $styles = array();
-    private $lang = null;
 
 
     public function addStyle(MapStyle $style)
@@ -73,11 +72,6 @@ class TileProxy
     public function setLogDir($option_log_dir)
     {
         $this->option_log_dir = $option_log_dir;
-    }
-
-    public function setLang($lang)
-    {
-        $this->lang = $lang;
     }
 
     public function setReferrer($referrer)
@@ -243,7 +237,6 @@ class TileProxy
         $parts = explode("/", $path_only);
 
         if($this->validate($parts)) {
-            $succes = false;
 
             $current_style = $this->styles[$parts[1]];
             $current_style_name = $current_style->getName();
