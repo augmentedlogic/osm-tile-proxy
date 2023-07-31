@@ -1,1 +1,4 @@
 public/index.php
+composer.lock
+/vendor
+.idea
