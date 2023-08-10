@@ -93,11 +93,11 @@ class TileProxy
 
     private function is_valid_image(string $path, MapStyle $current_style): bool
     {
-        $a = getimagesize($path);
-        $image_type = $a[2];
-        if(in_array($image_type , array($current_style->getImageChecktype())))
-        {
-            return true;
+        if(file_exists($path)) {
+            $a = getimagesize($path);
+            if($a) {
+               return true;
+            }
         }
         return false;
     }
@@ -136,11 +136,14 @@ class TileProxy
 
         // check if image downloaded successfully
         if($this->is_valid_image($save_to, $current_style)) {
+        //if(true) {
             $success = true;
 
             if($current_style->getImageChecktype() !== MapStyle::IMAGE_FORMAT_PNG) {
                 $this->log("to ". $current_style->getImageFormat(), self::LOGLEVEL_DEBUG);
                 $save_to = $this->changeImageFormat($save_to, $current_style->getImageFormat());
+            } else {
+                $this->log("noconv " .$current_style->getImageFormat(), self::LOGLEVEL_DEBUG);
             }
 
             // TODO: dont save image in between
@@ -312,8 +315,8 @@ class TileProxy
     {
         $path_only = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
         $parts = explode("/", $path_only);
-
-        return array_shift($parts);
+        array_shift($parts);
+        return $parts;
     }
 }
 
