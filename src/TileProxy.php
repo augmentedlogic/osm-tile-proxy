@@ -59,7 +59,13 @@ class TileProxy
         $this->option_ttl = (int)($hours * 3600);
     }
 
-    public function setRefresh(float $days): void
+    /**
+     * Set the number of days after which this tile proxy should automatically clean up old cached tiles.
+     * Setting it to null will disable the automatic cleanup.
+     * @param float|null $days
+     * @return void
+     */
+    public function setRefresh(?float $days): void
     {
         $this->option_refresh = $days;
     }
