@@ -24,6 +24,7 @@ namespace com\augmentedlogic\osmtileproxy;
 
 use Imagick;
 use ImagickException;
+use RuntimeException;
 
 require_once 'MapStyle.php';
 
@@ -114,11 +115,10 @@ class TileProxy
     }
 
     /**
-     * @throws ImagickException
+     * @throws ImagickException|RuntimeException
      */
-    private function fetchTile(MapStyle $current_style, string $filepath, string $target_dir, string $save_to): bool
+    private function fetchTile(MapStyle $current_style, string $filepath, string $target_dir, string $save_to): void
     {
-        $success = false;
         // choose a random mirror
         $random = rand(0, count($current_style->getMirrors()) -1);
         $domain = $current_style->getMirrors()[$random];
@@ -139,7 +139,7 @@ class TileProxy
         $fp = fopen($save_to, "w");
         curl_setopt($ch, CURLOPT_FILE, $fp);
         curl_setopt($ch, CURLOPT_HEADER, 0);
-        curl_setopt($ch,CURLOPT_USERAGENT, $this->user_agent);
+        curl_setopt($ch, CURLOPT_USERAGENT, $this->user_agent);
         curl_exec($ch);
         curl_close($ch);
         fflush($fp);
@@ -147,8 +147,6 @@ class TileProxy
 
         // check if image downloaded successfully
         if($this->is_valid_image($save_to, $current_style)) {
-        //if(true) {
-            $success = true;
 
             if($current_style->getImageChecktype() !== MapStyle::IMAGE_FORMAT_PNG) {
                 $this->log("to ". $current_style->getImageFormat(), self::LOGLEVEL_DEBUG);
@@ -180,9 +178,6 @@ class TileProxy
         } else {
             unlink($save_to);
         }
-
-
-        return $success;
     }
 
     /**
@@ -274,50 +269,48 @@ class TileProxy
             $this->log("Checking ". $check_file, self::LOGLEVEL_DEBUG);
 
             try {
-                if (!is_file($check_file)) {
-                    $success = $this->fetchTile($current_style, $target_file, $target_dir, $check_file);
+                if (!file_exists($check_file)) {
+                    $this->fetchTile($current_style, $target_file, $target_dir, $check_file);
                 } else {
                     // check if refresh is needed
                     // if no refresh is set, we can skip this operation
                     if (!is_null($this->option_refresh)) {
                         if (filemtime($check_file) > time() - (86400 * $this->option_refresh)) {
                             $this->log("refresh needed.", self::LOGLEVEL_DEBUG);
-                            $success = $this->fetchTile($current_style, $target_file, $target_dir, $check_file);
+                            $this->fetchTile($current_style, $target_file, $target_dir, $check_file);
                         } else {
                             $this->log("file found in cache.", self::LOGLEVEL_DEBUG);
-                            $success = true;
                         }
-                    } else {
-                        $success = true;
                     }
                 }
             } catch (ImagickException $e) {
                 header ('Content-Type: text/html');
+                echo 'Imagick exception ' . $e->getMessage();
+                http_response_code(500);
+                return;
+            } catch (RuntimeException $e) {
+                header ('Content-Type: text/html');
+                echo $e->getMessage();
                 http_response_code(500);
                 return;
             }
 
 
             // we set browser cache options
-            if($success) {
-                $exp_gmt = gmdate("D, d M Y H:i:s", time() + $this->option_ttl) ." GMT";
-                $mod_gmt = gmdate("D, d M Y H:i:s", filemtime($check_file)) ." GMT";
-                header("Expires: " . $exp_gmt);
-                header("Last-Modified: " . $mod_gmt);
-                header("Cache-Control: public, max-age=" . $this->option_ttl);
-                header ('Content-Type: image/'.$current_style->getImageFormat());
-                readfile($check_file);
-                flush();
-            } else {
-                // something else went wrong
-                header ('Content-Type: text/html');
-                http_response_code(404);
-            }
+            $exp_gmt = gmdate("D, d M Y H:i:s", time() + $this->option_ttl) ." GMT";
+            $mod_gmt = gmdate("D, d M Y H:i:s", filemtime($check_file)) ." GMT";
+            header("Expires: " . $exp_gmt);
+            header("Last-Modified: " . $mod_gmt);
+            header("Cache-Control: public, max-age=" . $this->option_ttl);
+            header ('Content-Type: image/'.$current_style->getImageFormat());
+            readfile($check_file);
+            flush();
 
         } else {
             // image not found
             header ('Content-Type: text/html');
-            http_response_code(404);
+            echo 'Invalid request URL';
+            http_response_code(400);
         }
 
     }
