@@ -132,7 +132,7 @@ class TileProxy
         $this->log("Saving to ".$save_to, self::LOGLEVEL_DEBUG);
         $this->log("mkdir ".$target_dir, self::LOGLEVEL_DEBUG);
         if(!is_dir($target_dir)) {
-            mkdir($target_dir, 0777, true);
+            @mkdir($target_dir, 0777, true);
         }
         // tile download
         $ch = curl_init($url);
@@ -178,8 +178,8 @@ class TileProxy
             }
 
         } else {
-            $content = file_get_contents($save_to);
-            unlink($save_to);
+            $content = @file_get_contents($save_to);
+            @unlink($save_to);
             throw new RuntimeException($content);
         }
     }
