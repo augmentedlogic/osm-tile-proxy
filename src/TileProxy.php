@@ -146,7 +146,9 @@ class TileProxy
         fclose($fp);
 
         // check if image downloaded successfully
-        if($this->is_valid_image($save_to, $current_style)) {
+        if (curl_errno($ch) !== 0) {
+            throw new RuntimeException(curl_error($ch));
+        } elseif ($this->is_valid_image($save_to, $current_style)) {
 
             if($current_style->getImageChecktype() !== MapStyle::IMAGE_FORMAT_PNG) {
                 $this->log("to ". $current_style->getImageFormat(), self::LOGLEVEL_DEBUG);
@@ -156,19 +158,19 @@ class TileProxy
             }
 
             // TODO: dont save image in between
-            if($current_style->getModulate() || $current_style->getSepia() || $current_style->getNegate()) {
+            if ($current_style->getModulate() || $current_style->getSepia() || $current_style->getNegate()) {
                 $image_obj = new Imagick(realpath($save_to));
-                if($current_style->getModulate()) {
+                if ($current_style->getModulate()) {
                     $this->log("Modulating Image", self::LOGLEVEL_DEBUG);
                     $this->modulateImage($image_obj, $current_style->getModulateBrightness(), $current_style->getModulateSaturation(), $current_style->getModulateHue());
                 }
 
-                if($current_style->getSepia()) {
+                if ($current_style->getSepia()) {
                     $this->log("Sepia Image", self::LOGLEVEL_DEBUG);
                     $this->sepiaToneImage($image_obj, $current_style->getSepiaValue());
                 }
 
-                if($current_style->getNegate()) {
+                if ($current_style->getNegate()) {
                     $this->log("Negate Image", self::LOGLEVEL_DEBUG);
                     $this->negateImage($image_obj, $current_style->getNegateGrayOnly(), $current_style->getNegateChannel());
                 }
@@ -176,7 +178,9 @@ class TileProxy
             }
 
         } else {
+            $content = file_get_contents($save_to);
             unlink($save_to);
+            throw new RuntimeException($content);
         }
     }
 
