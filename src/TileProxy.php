@@ -59,6 +59,11 @@ class TileProxy
         $this->option_ttl = (int)($hours * 3600);
     }
 
+    public function setUserAgent(string $userAgent): void
+    {
+        $this->user_agent = $userAgent;
+    }
+
     /**
      * Set the number of days after which this tile proxy should automatically clean up old cached tiles.
      * Setting it to null will disable the automatic cleanup.
