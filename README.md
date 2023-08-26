@@ -45,6 +45,10 @@ http://<mydomain>/<stylename>/${z}/${x}/${y}.png
 
 For more configuration options and styling examples, see [OSM Tile Proxy on augmentedlogic developer](https://developer.augmentedlogic.com/project/osm-tile-proxy) 
 
+## Demo
+
+See some style examples in action https://augmentedlogic.github.io/demo/osm-tile-proxy/
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
